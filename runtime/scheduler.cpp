@@ -1129,12 +1129,12 @@ CHEETAH_INTERNAL_NORETURN void longjmp_to_runtime(__cilkrts_worker *w,
    finds CILK_FRAME_UNSYNCHED is set.  It returns SYNC_READY if there
    are no children and execution can continue.  Otherwise it returns
    SYNC_NOT_READY to suspend the frame. */
-int Cilk_sync(__cilkrts_worker *const w, __cilkrts_stack_frame *frame) {
+sync_ready Cilk_sync(__cilkrts_worker *const w, __cilkrts_stack_frame *frame) {
 
     // cilkrts_alert(SYNC, "(Cilk_sync) frame %p", (void *)frame);
 
     Closure *t;
-    int res = SYNC_READY;
+    sync_ready res = SYNC_READY;
 
     //----- EVENT_CILK_SYNC
     BusyClosure *busy = w->g->busy;
