@@ -1109,7 +1109,7 @@ CHEETAH_INTERNAL_NORETURN void longjmp_to_runtime(__cilkrts_worker *w) {
     /* Can't change to WORKER_SCHED yet because the reducer map
        may still be set. */
     sanitizer_start_switch_fiber(nullptr);
-    __builtin_longjmp(w->l->rts_ctx, 1);
+    _longjmp(w->l->rts_ctx, 1);
 }
 
 /* This function implements a sync in user code, including the implicit
@@ -1229,7 +1229,7 @@ static void do_what_it_says(BusyClosure *busy, __cilkrts_worker *w,
 
             // longjmp invalidates non-volatile variables
             __cilkrts_worker *volatile w_save = w;
-            if (__builtin_setjmp(l->rts_ctx) == 0) {
+            if (_setjmp(l->rts_ctx) == 0) {
                 w->l->change_state(WORKER_RUN);
                 longjmp_to_user_code(w, t);
             } else {

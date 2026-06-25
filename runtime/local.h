@@ -1,9 +1,9 @@
 #ifndef _CILK_LOCAL_H
 #define _CILK_LOCAL_H
 
+#include <setjmp.h>
 #include "fiber.h"
 #include "internal-malloc-impl.h" /* for cilk_im_desc */
-#include "jmpbuf.h"
 #include "local-hypertable.h"
 
 enum __cilkrts_worker_state : unsigned char {
@@ -24,7 +24,7 @@ struct __attribute__((visibility("hidden"))) local_state {
     uint32_t wake_val;
     cilk_fiber *abandoned;
 
-    jmpbuf rts_ctx;
+    jmp_buf rts_ctx;
     hyper_table *lht;
     hyper_table *rht;
     cilk_fiber_pool fiber_pool;
