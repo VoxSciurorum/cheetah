@@ -13,9 +13,9 @@ struct BusyClosure;
 enum ClosureStatus : unsigned char {
     /* Closure.status == 0 is invalid */
     CLOSURE_RUNNING = 42,
-    CLOSURE_SUSPENDED,
-    CLOSURE_RETURNING,
-    CLOSURE_READY,
+    CLOSURE_SUSPENDED,   /* Waiting at a sync */
+    CLOSURE_RETURNING,   /* Immune from steal.  Runtime calls return_value. */
+    CLOSURE_READY,       /* Set but not tested. */
     CLOSURE_PRE_INVALID, /* before first real use */
     CLOSURE_POST_INVALID /* after destruction */
 };
