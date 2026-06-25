@@ -609,7 +609,7 @@ void __cilkrts_internal_exit_cilkified_root(global_state *g,
     } else {
         // done; go back to runtime
         CILK_START_TIMING(w, INTERVAL_WORK);
-        longjmp_to_runtime(w);
+        longjmp_to_runtime(w, runtime_action::EXIT);
     }
 }
 

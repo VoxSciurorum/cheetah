@@ -60,6 +60,16 @@ thread_local struct __cilkrts_tls __cilkrts_tls = {
 // Misc. helper functions
 // ==============================================
 
+const char *string_of_action(runtime_action action) {
+  switch (action) {
+  case runtime_action::RETURN: return "return";
+  case runtime_action::SYNC: return "sync";
+  case runtime_action::EXIT: return "exit";
+  default: return "unknown";
+  }
+}
+
+
 /***********************************************************
  * Internal random number generator.
  ***********************************************************/
@@ -603,7 +613,7 @@ static void Cilk_do_reductions_for_return(__cilkrts_worker *w,
         if (!__builtin_setjmp(sf.ctx)) {
             // Jump to the runtime to attempt to return this closure.
             w->l->returning = true;
-            longjmp_to_runtime(w);
+            longjmp_to_runtime(w, runtime_action::RETURN);
         }
 
         sanitizer_finish_switch_fiber();
@@ -1102,8 +1112,10 @@ void longjmp_to_user_code(__cilkrts_worker *w, Closure *t) {
     sysdep_longjmp_to_sf(sf);
 }
 
-CHEETAH_INTERNAL_NORETURN void longjmp_to_runtime(__cilkrts_worker *w) {
-    cilkrts_alert(SCHED | ALERT_FIBER, "(longjmp_to_runtime)");
+CHEETAH_INTERNAL_NORETURN void longjmp_to_runtime(__cilkrts_worker *w,
+                                                  runtime_action action) {
+    cilkrts_alert(SCHED | ALERT_FIBER, "longjmp_to_runtime %s",
+                  string_of_action(action));
 
     CILK_SWITCH_TIMING(w, INTERVAL_WORK, INTERVAL_SCHED);
     /* Can't change to WORKER_SCHED yet because the reducer map
