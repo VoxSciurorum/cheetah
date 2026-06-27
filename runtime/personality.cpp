@@ -140,6 +140,10 @@ sync_in_personality(__cilkrts_worker *w, __cilkrts_stack_frame *sf,
     // save floating point state
     sysdep_save_fp_ctrl_state(sf);
 
+#if __has_builtin(__builtin_unwind_init)
+    __builtin_unwind_init();
+#endif
+
     if (__builtin_setjmp(sf->ctx) == 0) {
         // set closure_exception
         closure_exception *exn_r = get_exception_reducer(w);
@@ -197,6 +201,9 @@ uncilkify(global_state *g, __cilkrts_stack_frame *sf) {
 static void resume_from_last_frame(__cilkrts_worker *w,
                                    __cilkrts_stack_frame *sf,
                                    _Unwind_Exception *ue_header) {
+#if __has_builtin(__builtin_unwind_init)
+    __builtin_unwind_init();
+#endif
     cilkrts_alert(CFRAME, "resume_from_last_frame %p", (void *)sf);
     CILK_ASSERT(CHECK_CILK_FRAME_MAGIC(w->g, sf));
     // WHEN_CILK_DEBUG(sf->magic = ~CILK_STACKFRAME_MAGIC);
