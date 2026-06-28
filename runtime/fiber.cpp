@@ -318,6 +318,11 @@ static void free_stack(cilk_fiber *f) {
         char *stack_high = f->get_stack_start();
         memset(stack_low, 0xbb, stack_high - stack_low);
     }
+    {
+        void *fp = __builtin_frame_address(0);
+        if (f->in_fiber(fp))
+            cilkrts_bug("freeing active fiber %p", (void *)f);
+    }
     char *alloc_low = f->get_fiber_start();
     char *alloc_high = f->get_fiber_end();
     if (munmap(f->alloc_low, alloc_high - alloc_low) < 0)

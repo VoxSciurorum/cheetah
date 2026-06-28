@@ -50,7 +50,7 @@ static local_state *worker_local_init(local_state *l, global_state *g) {
 
 static void worker_local_destroy([[maybe_unused]] local_state *l,
                                  [[maybe_unused]] global_state *g) {
-    /* currently nothing to do here */
+
 }
 
 static void busy_init(global_state *g) {

@@ -8,6 +8,7 @@
 #include <cinttypes> /* PRIu32 */
 #include <cstdio>
 #include <cstdlib>
+#include <utility>
 
 // When the pool becomes full (empty), free (allocate) this fraction
 // of the pool back to (from) parent / the OS.
@@ -82,6 +83,8 @@ static void fiber_pool_init(cilk_fiber_pool *pool, size_t stacksize,
     pool->size = 0;
     pool->fibers =
         static_cast<cilk_fiber **>(calloc(bufsize, sizeof(*pool->fibers)));
+    pool->abandoned[0] = nullptr;
+    pool->abandoned[1] = nullptr;
 }
 
 /* Helper function for destroying fiber pool */
@@ -319,6 +322,14 @@ void cilk_fiber_pool_per_worker_init(__cilkrts_worker *w) {
  */
 void cilk_fiber_pool_per_worker_terminate(__cilkrts_worker *w) {
     cilk_fiber_pool *pool = &(w->l->fiber_pool);
+    if (cilk_fiber *abandoned = pool->abandoned[0]) {
+        cilk_fiber_deallocate(abandoned);
+        pool->abandoned[0] = nullptr;
+    }
+    if (cilk_fiber *abandoned = pool->abandoned[1]) {
+        cilk_fiber_deallocate(abandoned);
+        pool->abandoned[1] = nullptr;
+    }
     while (pool->size > 0) {
         unsigned index = --pool->size;
         cilk_fiber *fiber = pool->fibers[index];
@@ -363,16 +374,31 @@ cilk_fiber *cilk_fiber_allocate_from_pool(__cilkrts_worker *w) {
  * free a batch of fibers back into the parent pool (or system).
  */
 void cilk_fiber_deallocate_to_pool(__cilkrts_worker *w,
-                                   cilk_fiber *fiber_to_return) {
-    if (fiber_to_return)
-        sanitizer_poison_fiber(fiber_to_return);
-
+                                   cilk_fiber *fiber_to_return,
+                                   fiber_type type) {
     cilk_fiber_pool *pool = &(w->l->fiber_pool);
+
+    switch (type) {
+    case FIBER_EXT:
+	break;
+    case FIBER_NORMAL:
+        std::swap(fiber_to_return, pool->abandoned[0]);
+	break;
+    case FIBER_THROWING:
+        std::swap(fiber_to_return, pool->abandoned[1]);
+	break;
+    }
+
+    if (fiber_to_return == nullptr) {
+        return;
+    }
+
+    sanitizer_poison_fiber(fiber_to_return);
+
+    fiber_to_return->clear();
+
     if (pool->capacity == 0) {
-        if (fiber_to_return) {
-            fiber_to_return->clear();
-            cilk_fiber_deallocate(fiber_to_return);
-        }
+        cilk_fiber_deallocate(fiber_to_return);
         return;
     }
     if (pool->size == pool->capacity) {
@@ -380,13 +406,9 @@ void cilk_fiber_deallocate_to_pool(__cilkrts_worker *w,
         CILK_ASSERT((pool->capacity - pool->size) >=
                     (pool->capacity / BATCH_FRACTION));
     }
-    if (fiber_to_return) {
-        fiber_to_return->clear();
-        pool->fibers[pool->size++] = fiber_to_return;
-        pool->stats.in_use--;
-        if (pool->size > pool->stats.max_free) {
-            pool->stats.max_free = pool->size;
-        }
-        fiber_to_return = nullptr;
+    pool->fibers[pool->size++] = fiber_to_return;
+    pool->stats.in_use--;
+    if (pool->size > pool->stats.max_free) {
+        pool->stats.max_free = pool->size;
     }
 }

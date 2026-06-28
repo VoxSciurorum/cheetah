@@ -87,7 +87,7 @@ void closure_exception::reduce(reducer_base *l, reducer_base *r) noexcept {
     lex->parent_rsp = rex->parent_rsp;
     if (lex->throwing_fiber)
         cilk_fiber_deallocate_to_pool(__cilkrts_get_tls_worker(),
-                                      lex->throwing_fiber);
+                                      lex->throwing_fiber, FIBER_THROWING);
     lex->throwing_fiber = rex->throwing_fiber;
 }
 
@@ -318,7 +318,8 @@ extern "C" _Unwind_Reason_Code __cilk_personality_internal(
                     if (exn_r->throwing_fiber) {
                         // Free any fiber we're saving for stack-unwinding,
                         // since we don't need it anymore.
-                        cilk_fiber_deallocate_to_pool(w, exn_r->throwing_fiber);
+                        cilk_fiber_deallocate_to_pool(w, exn_r->throwing_fiber,
+                                                      FIBER_THROWING);
                         exn_r->throwing_fiber = nullptr;
                     }
                     // Free the exception-reducer view.

@@ -32,6 +32,10 @@ struct cilk_fiber_pool {
     unsigned int size;     // Number of fibers currently in the pool
     fiber_pool_stats stats;
 
+    // Defer freeing of fibers until the worker is definitely
+    // not running on the fiber.
+    cilk_fiber *abandoned[2];
+
     alignas(CILK_CACHE_LINE) cilk_mutex lock;
 };
 
@@ -122,8 +126,11 @@ void cilk_fiber_deallocate_global(global_state *, cilk_fiber *fiber);
 // allocate / deallocate one fiber from / back to per-worker pool
 CHEETAH_INTERNAL
 cilk_fiber *cilk_fiber_allocate_from_pool(__cilkrts_worker *w);
+
+enum fiber_type { FIBER_EXT, FIBER_NORMAL, FIBER_THROWING };
 CHEETAH_INTERNAL
-void cilk_fiber_deallocate_to_pool(__cilkrts_worker *w, cilk_fiber *fiber);
+void cilk_fiber_deallocate_to_pool(__cilkrts_worker *w, cilk_fiber *fiber,
+                                   fiber_type type);
 
 #if CILK_ENABLE_ASAN_HOOKS
 void sanitizer_start_switch_fiber(cilk_fiber *fiber) __CILKRTS_NOTHROW;

@@ -132,7 +132,7 @@ extern "C" void __cilkrts_cleanup_fiber(__cilkrts_stack_frame *sf,
         // a non-cleanup landing pad, execution is continuing within this frame,
         // and we can safely free any saved throwing fiber.
         if (throwing_fiber) {
-            cilk_fiber_deallocate_to_pool(w, throwing_fiber);
+            cilk_fiber_deallocate_to_pool(w, throwing_fiber, FIBER_THROWING);
         }
         return;
     }
@@ -142,7 +142,7 @@ extern "C" void __cilkrts_cleanup_fiber(__cilkrts_stack_frame *sf,
     // Since we're longjmping to another fiber, we don't need to save
     // throwing_fiber anymore.
     if (throwing_fiber) {
-        cilk_fiber_deallocate_to_pool(w, throwing_fiber);
+        cilk_fiber_deallocate_to_pool(w, throwing_fiber, FIBER_THROWING);
     }
     __builtin_longjmp(sf->ctx, 1); // Does not return
     return;

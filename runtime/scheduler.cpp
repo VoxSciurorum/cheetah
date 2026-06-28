@@ -185,14 +185,16 @@ static void setup_for_sync(__cilkrts_worker *w, worker_id self, Closure *t) {
     // never go back to the runtime; we will only free it either once
     // when we get back to the runtime or when we encounter a case
     // where we need to.
-    if (t->fiber)
-        cilk_fiber_deallocate_to_pool(w, t->fiber);
+    if (t->fiber) {
+        cilk_fiber_deallocate_to_pool(w, t->fiber, FIBER_NORMAL);
+        t->fiber = nullptr;
+    }
     t->fiber = t->fiber_child;
     t->fiber_child = nullptr;
 
     if (USE_EXTENSION) {
         if (t->ext_fiber)
-            cilk_fiber_deallocate_to_pool(w, t->ext_fiber);
+            cilk_fiber_deallocate_to_pool(w, t->ext_fiber, FIBER_EXT);
         t->ext_fiber = t->ext_fiber_child;
         t->ext_fiber_child = nullptr;
     }
@@ -446,9 +448,9 @@ static Closure *Closure_return(__cilkrts_worker *const w, worker_id self,
     if (child->left_sib || parent->fiber_child) {
         // Case where we are not the leftmost stack.
         CILK_ASSERT(parent->fiber_child != child->fiber);
-        cilk_fiber_deallocate_to_pool(w, child->fiber);
+        cilk_fiber_deallocate_to_pool(w, child->fiber, FIBER_NORMAL);
         if (USE_EXTENSION && child->ext_fiber) {
-            cilk_fiber_deallocate_to_pool(w, child->ext_fiber);
+            cilk_fiber_deallocate_to_pool(w, child->ext_fiber, FIBER_EXT);
         }
     } else {
         // We are leftmost, pass stack/fiber up to parent.
@@ -1159,10 +1161,10 @@ sync_ready Cilk_sync(__cilkrts_worker *const w, __cilkrts_stack_frame *frame) {
         cilkrts_alert(SYNC, "(Cilk_sync) Closure %p has outstanding children",
                       (void *)t);
         if (t->fiber) {
-            cilk_fiber_deallocate_to_pool(w, t->fiber);
+            cilk_fiber_deallocate_to_pool(w, t->fiber, FIBER_NORMAL);
         }
         if (USE_EXTENSION && t->ext_fiber) {
-            cilk_fiber_deallocate_to_pool(w, t->ext_fiber);
+            cilk_fiber_deallocate_to_pool(w, t->ext_fiber, FIBER_EXT);
         }
         t->fiber = nullptr;
         t->ext_fiber = nullptr;
