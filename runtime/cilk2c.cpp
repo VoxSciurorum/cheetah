@@ -161,7 +161,7 @@ void __cilkrts_sync(__cilkrts_stack_frame *sf) {
         // if this frame is ready to sync.
         sysdep_longjmp_to_sf(sf);
     } else {
-        longjmp_to_runtime(w);
+        longjmp_to_runtime(w, runtime_action::SYNC);
     }
 }
 

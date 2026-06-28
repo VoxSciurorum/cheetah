@@ -34,9 +34,7 @@ extern local_state default_worker_local_state;
 
 static local_state *worker_local_init(local_state *l, global_state *g) {
     l->shadow_stack = new __cilkrts_stack_frame *[g->options.deqdepth]();
-    for (int i = 0; i < JMPBUF_SIZE; i++) {
-        l->rts_ctx[i] = nullptr;
-    }
+    memset(l->rts_ctx, 0, sizeof l->rts_ctx);
     l->state = WORKER_IDLE;
     l->provably_good_steal = false;
     l->exiting = false;
@@ -607,7 +605,7 @@ void __cilkrts_internal_exit_cilkified_root(global_state *g,
     } else {
         // done; go back to runtime
         CILK_START_TIMING(w, INTERVAL_WORK);
-        longjmp_to_runtime(w);
+        longjmp_to_runtime(w, runtime_action::EXIT);
     }
 }
 
