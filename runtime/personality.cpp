@@ -144,6 +144,7 @@ sync_in_personality(__cilkrts_worker *w, __cilkrts_stack_frame *sf,
     __builtin_unwind_init();
 #endif
 
+    __cilkrts_stack_frame * volatile sf_save = sf;
     if (__builtin_setjmp(sf->ctx) == 0) {
         // set closure_exception
         closure_exception *exn_r = get_exception_reducer(w);
@@ -174,7 +175,7 @@ sync_in_personality(__cilkrts_worker *w, __cilkrts_stack_frame *sf,
         __cilkrts_sync(sf);
     } else {
         sanitizer_finish_switch_fiber();
-        __cilkrts_do_reductions(sf);
+        __cilkrts_do_reductions(sf_save);
     }
 }
 
